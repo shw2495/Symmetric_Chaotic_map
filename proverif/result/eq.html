@@ -1,0 +1,51 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+		      <html>
+		    <head>
+		    <title>ProVerif: equations and destructors</title>
+		    <link rel="stylesheet" href="cssproverif.css">
+									   </head>
+									 <body>
+									 <H1>Equations</H1>
+<H2>Linear part</H2>
+Initial equations:
+<ul>
+
+<li><span class="fun">mult</span>(<span class="var">a</span>,<span class="var">b</span>) <span class="conn">=</span> <span class="fun">mult</span>(<span class="var">b</span>,<span class="var">a</span>)
+</ul>
+Completed equations:
+<ul>
+
+<li><span class="fun">mult</span>(<span class="var">a</span>,<span class="var">b</span>) <span class="conn">=</span> <span class="fun">mult</span>(<span class="var">b</span>,<span class="var">a</span>)
+</ul>
+<H2>Convergent part</H2>
+Initial equations:
+<ul>
+
+<li><span class="fun">xor</span>(<span class="fun">xor</span>(<span class="var">a_19</span>,<span class="var">b_20</span>),<span class="var">b_20</span>) <span class="conn">=</span> <span class="var">a_19</span>
+</ul>
+Completed equations:
+<ul>
+
+<li><span class="fun">xor</span>(<span class="fun">xor</span>(<span class="var">a_19</span>,<span class="var">b_20</span>),<span class="var">b_20</span>) <span class="conn">=</span> <span class="var">a_19</span>
+</ul>
+<H1>Completed destructors</H2>
+(<span class="fun">fail-any</span> <span class="fun">||</span> <span class="var">@mayfail_67</span>) <span class="conn">=&gt;</span> <span class="fun">fail-any</span><br>
+(<span class="var">v_65</span> <span class="fun">||</span> <span class="var">@mayfail_66</span>) <span class="conn">=&gt;</span> <span class="var">@mayfail_66</span> if <span class="var">v_65</span> <span class="conn">&lt;&gt;</span> <span class="fun">true</span><br>
+(<span class="fun">true</span> <span class="fun">||</span> <span class="var">@mayfail_64</span>) <span class="conn">=&gt;</span> <span class="fun">true</span><br>
+<br><span class="fun">not</span>(<span class="fun">fail-any</span>) <span class="conn">=&gt;</span> <span class="fun">fail-any</span><br>
+<span class="fun">not</span>(<span class="var">v_68</span>) <span class="conn">=&gt;</span> <span class="fun">true</span> if <span class="var">v_68</span> <span class="conn">&lt;&gt;</span> <span class="fun">true</span><br>
+<span class="fun">not</span>(<span class="fun">true</span>) <span class="conn">=&gt;</span> <span class="fun">false</span><br>
+<br><span class="fun">div</span>(<span class="var">v_78</span>,<span class="fun">fail-any</span>) <span class="conn">=&gt;</span> <span class="fun">fail-any</span><br>
+<span class="fun">div</span>(<span class="fun">fail-any</span>,<span class="var">@mayfail_77</span>) <span class="conn">=&gt;</span> <span class="fun">fail-any</span><br>
+<span class="fun">div</span>(<span class="var">v_75</span>,<span class="var">v_76</span>) <span class="conn">=&gt;</span> <span class="fun">fail-any</span> if (forall <span class="fun">@gen4</span>. <span class="var">v_75</span> <span class="conn">&lt;&gt;</span> <span class="fun">mult</span>(<span class="var">v_76</span>,<span class="fun">@gen4</span>))<br>
+<span class="fun">div</span>(<span class="fun">mult</span>(<span class="var">b_73</span>,<span class="var">a_74</span>),<span class="var">a_74</span>) <span class="conn">=&gt;</span> <span class="var">b_73</span><br>
+<span class="fun">div</span>(<span class="fun">mult</span>(<span class="var">a1_70</span>,<span class="var">b1_69</span>),<span class="var">a1_70</span>) <span class="conn">=&gt;</span> <span class="var">b1_69</span><br>
+<br><span class="fun">bergamo</span>(<span class="var">v_84</span>,<span class="fun">fail-any</span>) <span class="conn">=&gt;</span> <span class="fun">fail-any</span><br>
+<span class="fun">bergamo</span>(<span class="fun">fail-any</span>,<span class="var">@mayfail_83</span>) <span class="conn">=&gt;</span> <span class="fun">fail-any</span><br>
+<span class="fun">bergamo</span>(<span class="var">v_81</span>,<span class="var">v_82</span>) <span class="conn">=&gt;</span> <span class="fun">fail-any</span> if (forall <span class="fun">@gen2</span>. <span class="var">v_81</span> <span class="conn">&lt;&gt;</span> <span class="fun">cheb</span>(<span class="var">v_82</span>,<span class="fun">@gen2</span>))<br>
+<span class="fun">bergamo</span>(<span class="fun">cheb</span>(<span class="var">x1_80</span>,<span class="var">s1_79</span>),<span class="var">x1_80</span>) <span class="conn">=&gt;</span> <span class="var">s1_79</span><br>
+<br>(<span class="fun">fail-any</span> <span class="fun">&amp;&amp;</span> <span class="var">@mayfail_88</span>) <span class="conn">=&gt;</span> <span class="fun">fail-any</span><br>
+(<span class="var">v_86</span> <span class="fun">&amp;&amp;</span> <span class="var">@mayfail_87</span>) <span class="conn">=&gt;</span> <span class="fun">false</span> if <span class="var">v_86</span> <span class="conn">&lt;&gt;</span> <span class="fun">true</span><br>
+(<span class="fun">true</span> <span class="fun">&amp;&amp;</span> <span class="var">@mayfail_85</span>) <span class="conn">=&gt;</span> <span class="var">@mayfail_85</span><br>
+<br></body>
+</html>

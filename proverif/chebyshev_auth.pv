@@ -1,0 +1,183 @@
+set traceDisplay = long.
+
+(* channel *)
+free ca: channel[private].
+free cb: channel[private].
+free cc: channel.
+
+type identity.
+type password.
+type biometric.
+type nonce.
+
+(* user's secret *)
+free ID_i: identity [private].
+weaksecret ID_i.
+free PW_i: password [private].
+weaksecret PW_i.
+free Bio_i: biometric [private].
+
+(* server's identity *)
+free SID_j: identity.
+
+(* biohash function*)
+fun bhash(biometric): bitstring.
+
+(* secret meesage *)
+free secretU, secretS: bitstring [private].
+
+(* Events *)
+event beginUi(bitstring).
+event endUi(bitstring).
+event beginSj(identity).
+event endSj(identity).
+
+(* query *)
+query attacker(ID_i).
+query attacker(PW_i).
+query attacker(Bio_i).
+query attacker(secretU).
+query attacker(secretS).
+
+query x: bitstring; event(endUi(x)) ==> event(beginUi(x)).
+query x: identity; inj-event(endSj(x)) ==> inj-event(beginSj(x)).
+
+(* chebyshev polynomial *)
+type S [large].
+
+fun cheb(bitstring, S): bitstring.
+(*equation forall x1:bitstring, s1:S, s2:S; cheb(cheb(x1,s1),s2) = cheb(cheb(x1,s2),s1).*)
+reduc forall x1:bitstring,s1:S; bergamo(cheb(x1,s1),x1) = s1.
+(*
+fun bergamo(bitstring, bitstring): S.
+
+equation forall x1:bitstring, s1:S;
+    bergamo(cheb(x1,s1),x1) = s1;
+    forall x1:bitstring, s1:S, s2:S;
+    bergamo(cheb(cheb(x1,s1),s2),cheb(x1,s1)) = s2;
+    forall x1:bitstring, s1:S, s2:S;
+    bergamo(cheb(cheb(x1,s1),s2),cheb(x1,s2)) = s1.
+*)
+(* chebyshev polynomial on large prime P*)
+type X [bounded].
+
+fun discheb(X, S): X.
+(*equation forall x2:X, s21:S, s22:S; discheb(discheb(x2,s21),s22) = discheb(discheb(x2,s22),s21).*)
+
+
+fun mult(bitstring, bitstring): bitstring.
+equation forall a:bitstring, b:bitstring; mult(a,b) = mult(b,a).
+reduc forall a1:bitstring, b1:bitstring; div(mult(a1,b1), a1) = b1.
+
+(* hash function*)
+fun hash(bitstring): bitstring.
+
+(* Type converter *)
+fun nonce2bits(nonce): bitstring [data, typeConverter].
+fun X2bits(X): bitstring [data, typeConverter].
+fun S2bits(S): bitstring [data, typeConverter].
+fun bits2S(bitstring): S [data, typeConverter].
+
+(* concatenation function *)
+fun concat(bitstring, bitstring): bitstring [data].
+fun concat1(identity, nonce): bitstring [data].
+fun concat2(identity, password, bitstring): bitstring [data].
+fun concat3(identity, password, bitstring, nonce): bitstring [data].
+fun concat4(bitstring, nonce): bitstring [data].
+fun concat5(identity, bitstring): bitstring [data].
+
+(* xor function *)
+fun xor(bitstring, bitstring): bitstring.
+equation forall a:bitstring, b:bitstring; xor(xor(a,b), b)=a.
+
+(* public key cryptosystem *)
+type srand.
+fun gpkey(srand): X.
+fun gskey(srand): S.
+
+(* Verification table *)
+table verif(bitstring, bitstring).
+
+
+(* User process *)
+let processU(ID_i: identity, PW_i: password, Bio_i: biometric) =
+
+    (* Registration *)
+    let b_i = bhash(Bio_i) in
+    new R_i : nonce;
+    let C_i = xor(nonce2bits(R_i), hash(concat2(ID_i, PW_i, b_i))) in
+    let V_i = hash(concat3(ID_i,PW_i, b_i, R_i)) in
+    let HID_i = hash(concat5(ID_i, b_i)) in
+    out(ca, (HID_i, C_i, V_i));
+    in(ca, (UID_i:bitstring, =C_i, =V_i));
+    
+    (* Login/Authentication *)
+    in(cc, (SID: identity, px_j: X, pTx_j: X));
+    event beginSj(SID);
+    new r_i : S;
+    new RN_1 : S;
+    let Trx = discheb(px_j, r_i) in
+    let Trsx = mult(HID_i, X2bits(discheb(pTx_j, r_i))) in
+    let Trn1x = cheb(UID_i, RN_1) in
+    let HUID_i = hash(concat(UID_i, S2bits(RN_1))) in
+    out(cc, (SID, Trx, Trsx, Trn1x, HUID_i)); (* login *)
+    
+    (* mutual authentication *)
+    in(cc, (Trn2x: bitstring, HHUID_i: bitstring));
+    let RN_2 = bergamo(Trn2x, hash(concat(HID_i, S2bits(RN_1)))) in
+    if HHUID_i = hash(concat(concat(UID_i, S2bits(RN_1)),S2bits(RN_2))) then
+    event endUi(HID_i);
+
+    (* session key *)
+    let sess = cheb(cheb(hash(concat(concat(HID_i,S2bits(RN_1)), S2bits(RN_2))), RN_1), RN_2) in
+    out(cc, xor(secretU, sess)).
+
+(* Server process *)
+let processS(SID_j: identity, s_j: S) =
+    in(cc, (=SID_j, Trx: X, Trsx: bitstring, Trn1x: bitstring, HUID_i: bitstring));
+    let HID_i = div(Trsx, X2bits(discheb(Trx, s_j))) in
+    event beginUi(HID_i);
+    let HHID_i = hash(concat(HID_i, S2bits(s_j))) in
+    get verif(=HHID_i, UID_i) in
+    let RN_1 = bergamo(Trn1x, UID_i) in
+    if HUID_i = hash(concat(UID_i, S2bits(RN_1))) then
+    new RN_2: S;
+    let Trn2x = cheb(hash(concat(HID_i, S2bits(RN_1))), RN_2) in
+    let HHUID_i = hash(concat(concat(UID_i, S2bits(RN_1)), S2bits(RN_2))) in
+    out(cc, (Trn2x, HHUID_i));
+    event endSj(SID_j);
+    
+    (* session key *)
+    let sess = cheb(cheb(hash(concat(concat(HID_i,S2bits(RN_1)), S2bits(RN_2))), RN_1), RN_2) in
+    out(cc, xor(secretS, sess)).
+
+(* Registration process(RC) : attacker *)
+let processRC = 
+    in(ca, (HID: bitstring, C: bitstring, V: bitstring));
+    new Ur: nonce;
+    let UID = hash(concat4(HID, Ur)) in
+    out(cb, (HID, UID)).
+
+(* Registration process(S_j) : attacker *)
+let processRCS(HHID_i: bitstring, SID_j : identity, ps_j : S) = 
+    in(cb, (HID: bitstring, UID: bitstring));
+    let HHID = hash(concat(HID, S2bits(ps_j))) in
+    if HHID <> HHID_i then insert verif(HHID, UID).
+    
+
+(* Main process*)
+process
+    (* Constructing private key of serverS*)
+    new seed: srand;
+    let px_j = gpkey(seed) in
+    let ps_j = gskey(seed) in
+    let pTx_j = discheb(px_j, ps_j) in out(cc, (SID_j, px_j, pTx_j));
+    
+    (* Inserting userU's HID into verification table*)
+    new Ur_i: nonce;
+    let HID_i = hash(concat5(ID_i,bhash(Bio_i))) in
+    let HHID_i = hash(concat(HID_i, S2bits(ps_j))) in
+    let UID_i = hash(concat4(HID_i, Ur_i)) in
+    insert verif(HID_i, UID_i);
+
+    ( (!processU(ID_i, PW_i, Bio_i)) | (!processS(SID_j, ps_j)) | (!processRC) |(!processRCS(HHID_i, SID_j, ps_j)))

@@ -1,0 +1,62 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+		      <html>
+		    <head>
+		    <title>ProVerif: main result page</title>
+		    <link rel="stylesheet" href="cssproverif.css">
+									   </head>
+									 <body>
+									 <H1>ProVerif results</H1>
+<A HREF="eq.html">Equations & Destructors</A><br>
+<A HREF="process_0.html" TARGET="process">Process</A><br>
+<UL>
+<LI><span class="query">Weak secret <span class="fun">ID_i</span></span><br>
+<A HREF="clauses1.html" TARGET="clauses">Clauses</A><br>
+<A HREF="compclauses1.html">Completed clauses</A><br>
+<span class="result">RESULT Weak secret <span class="fun">ID_i</span> is <span class="trueresult">true (bad not derivable)</span>.</span><br>
+<LI><span class="query">Weak secret <span class="fun">PW_i</span></span><br>
+<A HREF="clauses2.html" TARGET="clauses">Clauses</A><br>
+<A HREF="compclauses2.html">Completed clauses</A><br>
+<span class="result">RESULT Weak secret <span class="fun">PW_i</span> is <span class="trueresult">true (bad not derivable)</span>.</span><br>
+<LI><span class="query">Query <span class="keyword">not </span><span class="pred">attacker</span>(<span class="name">ID_i</span>[])</span><br>
+<A HREF="clauses3.html" TARGET="clauses">Clauses</A><br>
+<A HREF="compclauses3.html">Completed clauses</A><br>
+<span class="result">RESULT <span class="keyword">not </span><span class="pred">attacker</span>(<span class="name">ID_i</span>[]) is <span class="trueresult">true</span>.</span><br>
+<LI><span class="query">Query <span class="keyword">not </span><span class="pred">attacker</span>(<span class="name">PW_i</span>[])</span><br>
+<A HREF="clauses4.html" TARGET="clauses">Clauses</A><br>
+<A HREF="compclauses4.html">Completed clauses</A><br>
+<span class="result">RESULT <span class="keyword">not </span><span class="pred">attacker</span>(<span class="name">PW_i</span>[]) is <span class="trueresult">true</span>.</span><br>
+<LI><span class="query">Query <span class="keyword">not </span><span class="pred">attacker</span>(<span class="name">Bio_i</span>[])</span><br>
+<A HREF="clauses5.html" TARGET="clauses">Clauses</A><br>
+<A HREF="compclauses5.html">Completed clauses</A><br>
+<span class="result">RESULT <span class="keyword">not </span><span class="pred">attacker</span>(<span class="name">Bio_i</span>[]) is <span class="trueresult">true</span>.</span><br>
+<LI><span class="query">Query <span class="keyword">not </span><span class="pred">attacker</span>(<span class="name">secretU</span>[])</span><br>
+<A HREF="clauses6.html" TARGET="clauses">Clauses</A><br>
+<A HREF="compclauses6.html">Completed clauses</A><br>
+<UL>
+<LI>goal reachable: <span class="pred">attacker</span>(<span class="name">secretU</span>[])<br>
+<A HREF="derivation1.html">Derivation</A> <A HREF="derivationexplained1.html">Explained derivation</A><br>
+<A HREF="unifyDeriv1.html" TARGET="unifderiv">Unify derivation</A><br>
+Could not find a trace corresponding to this derivation.<br>
+</UL>
+<span class="result">RESULT <span class="keyword">not </span><span class="pred">attacker</span>(<span class="name">secretU</span>[]) <span class="unknownresult">cannot be proved</span>.</span><br>
+<LI><span class="query">Query <span class="keyword">not </span><span class="pred">attacker</span>(<span class="name">secretS</span>[])</span><br>
+<A HREF="clauses7.html" TARGET="clauses">Clauses</A><br>
+<A HREF="compclauses7.html">Completed clauses</A><br>
+<span class="result">RESULT <span class="keyword">not </span><span class="pred">attacker</span>(<span class="name">secretS</span>[]) is <span class="trueresult">true</span>.</span><br>
+<LI><span class="query">Query event(<span class="fun">endUi</span>(<span class="var">x</span>)) <span class="conn">==&gt;</span> event(<span class="fun">beginUi</span>(<span class="var">x</span>))</span><br>
+<A HREF="clauses8.html" TARGET="clauses">Clauses</A><br>
+<A HREF="compclauses8.html">Completed clauses</A><br>
+<UL>
+<LI>goal reachable: <span class="pred">end</span>(<span class="fun">endUi</span>(<span class="fun">hash</span>(<span class="fun">concat5</span>(<span class="name">ID_i</span>[],<span class="fun">bhash</span>(<span class="name">Bio_i</span>[])))))<br>
+<A HREF="derivation2.html">Derivation</A> <A HREF="derivationexplained2.html">Explained derivation</A><br>
+<A HREF="unifyDeriv2.html" TARGET="unifderiv">Unify derivation</A><br>
+Could not find a trace corresponding to this derivation.<br>
+</UL>
+<span class="result">RESULT event(<span class="fun">endUi</span>(<span class="var">x</span>)) <span class="conn">==&gt;</span> event(<span class="fun">beginUi</span>(<span class="var">x</span>)) <span class="unknownresult">cannot be proved</span>.</span><br>
+<LI><span class="query">Query inj-event(<span class="fun">endSj</span>(<span class="var">x_90</span>)) <span class="conn">==&gt;</span> inj-event(<span class="fun">beginSj</span>(<span class="var">x_90</span>))</span><br>
+<A HREF="clauses9.html" TARGET="clauses">Clauses</A><br>
+<A HREF="compclauses9.html">Completed clauses</A><br>
+<span class="result">RESULT inj-event(<span class="fun">endSj</span>(<span class="var">x_90</span>)) <span class="conn">==&gt;</span> inj-event(<span class="fun">beginSj</span>(<span class="var">x_90</span>)) is <span class="trueresult">true</span>.</span><br>
+</UL>
+</body>
+</html>
