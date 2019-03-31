@@ -1,0 +1,186 @@
+role user(
+	Ui, Sj, RC : agent,
+	RPkeyi : symmetric_key, % used for registration phase(secure channel)
+	% Discrete Chaotic Map (SIDj, xj, Tsj(xj)(mod p))
+	Pubj : (agent.text.message) set,
+	Hash : hash_func, % cyptographic hash function
+	Snd, Rcv : channel(dy))
+played_by Ui def=
+
+	local
+	State : nat,	
+	IDi, PWi, Bi, Bhi, Ri, Ci, Vi, HIDi, UIDi, RNi, RN1: text,
+	Xj, Tri, Trisj, EHIDi, TRN1, RN2: text,
+	Tsj: message,	
+	RN3: text.text, 	
+	BH : hash_func
+	
+	init
+	State := 0
+
+	transition
+	% Registration phase
+	0. State = 0 /\ Rcv(Sj.Xj'.Tsj')
+	=|> State' := 2 /\ Pubj' := cons(Sj.Xj'.Tsj', Pubj)
+	/\ IDi' := new() /\ PWi' := new() /\ Bi' := new()
+	/\ secret(IDi', idi, Ui) /\ secret(PWi', pwi, Ui)
+	/\ secret(Bi', bi, Ui) % secrecy test
+	/\ Bhi' := BH(Bi') /\ Ri' := new()
+	/\ Ci' := xor(Ri', Hash(IDi'.PWi'.Bhi'))
+	/\ Vi' := Hash(IDi'.PWi'.Bhi'.Ri')
+	/\ HIDi' := Hash(IDi'.Bhi')
+	% check identity traceability	
+	/\ secret(HIDi, hidi, {Ui, RC, Sj})	
+	/\ Snd({HIDi'.Ci'.Vi'}_RPkeyi)
+	
+	2. State = 2 /\ Rcv({UIDi'.Ci.Vi}_RPkeyi) /\ in(Sj.Xj'.Tsj', Pubj)
+	=|> State' := 4
+	% login phase
+	/\ RNi' := new() /\ RN1' := new()
+	/\ Tri' := exp(Xj, RNi')
+	% encryption instead of multiplication	
+	/\ EHIDi' := {HIDi}_exp(Tsj',RNi') 
+	% symmetric encryption instead of chebyshev polynomial
+	/\ TRN1' := {RN1'}_UIDi %T_{RN1'}(UIDi)
+	/\ Snd(Sj.Tri'.EHIDi'.TRN1')
+	% authentication property
+	/\ witness(Ui, Sj, rn1, RN1')
+	/\ RN3' := HIDi.RN1
+	% authentication phase
+
+	4. State = 4 /\ Rcv({RN2'}_RN3)
+	=|> State' := 6
+	/\ request(Ui, Sj, rn2, RN2')
+
+end role
+
+role server(
+	Ui, Sj, RC: agent,
+	RPKeyj : symmetric_key, % used for registration phase(secure channel)
+	Hash : hash_func, % cyptographic hash function
+	Snd, Rcv : channel(dy))
+played_by Sj def=
+
+	local
+	State : nat,
+	HIDi, UIDi, XIDi : text,
+	SKeyj, Tri, RN1, RN2, Ex1 : text,	
+	RN3 : text.text,	
+	KeyRing: (text.text) set
+
+	init
+	State := 0
+
+	transition
+	% Server Registration phase
+	0. State = 0 /\ Rcv(start)
+	=|> State' := 1 /\ Snd({Sj}_RPKeyj)
+	
+	1. State = 1 /\ Rcv(SKeyj'_RPKeyj)
+	=|> State' := 2
+	
+	% Registration phase
+	2. State = 2 /\ Rcv({HIDi'.UIDi'}_RPKeyj) /\ not(in(XIDi'.UIDi', KeyRing))
+	=|> State' := 3
+	/\ XIDi' := Hash(HIDi.SKeyj)
+	/\ KeyRing' := cons(XIDi'.UIDi', KeyRing)
+	
+	% Login phase
+	3. State = 3 /\ Rcv(Sj.Tri'.{HIDi'}_Ex1'.{RN1'}_UIDi') /\ Ex1' = exp(Tri',SKeyj) /\ in(Hash(HIDi'.SKeyj).UIDi', KeyRing)
+	=|> State' := 5
+	/\ RN2' := new()
+	/\ RN3' := HIDi.RN1
+	/\ Snd({RN2'}_RN3')
+	/\ request(Sj, Ui, rn1, RN1)
+	/\ witness(Sj, Ui, rn2, RN2)	
+	%/\ request(Sj, Ui, rn2, RN2)
+	
+	
+end role
+
+% Registration Server
+role regserver(
+	Ui, Sj, RC : agent,
+	RPkeyi : symmetric_key, % secure channel w/ Ui
+	RPkeyj : symmetric_key, % secure channel w/ Sj
+	Hash : hash_func,
+	Sndi, Sndj, Rcv : channel(dy))
+played_by RC def=
+
+	local
+	State : nat,
+	HIDi, Uri, UIDi, Ci, Vi : text
+	Xj, SKj : text	
+	TXj : message
+
+	init
+	State := 0
+	
+	transition
+	% Server Registration
+	0. State = 0 /\ Rcv(Sj_RPKeyj)
+	=|> State' := 1
+	/\ Xj' := new()
+	/\ SKj' := new()
+	/\ Txj' := exp(Xj', Skj')
+	/\ Sndi(Sj.Xj'.TXj')
+	/\ Sndj(SKj'_RPKeyj)
+	/\ secret(SKj', skj, {Sj, RC}) 
+	
+	% User Registration	
+	1. State = 1 /\ Rcv({HIDi'.Ci'.Vi'}_RPkeyi)
+	=|> State' := 1
+	/\ Uri' := new()
+	/\ UIDi' := Hash(HIDi'.Uri')
+	/\ Sndi({UIDi'.Ci'.Vi'}_RPkeyi)
+	/\ Sndj({HIDi'.UIDi'}_RPkeyj)
+end role
+
+role session(
+	Ui, Sj, RC : agent,
+	RPKeyi : symmetric_key,
+	RPKeyj : symmetric_key, % used for registration phase(secure channel)
+	Pubj : (agent.text.message) set,
+	Hash : hash_func,
+	SKeyj : text) % secret key of server
+def=
+	local SI, SJ, RI, RJ, RR, SRI, SRJ : channel(dy)
+
+	composition
+	user(Ui, Sj, RC, RPKeyi, Pubj, Hash, SI, SJ)
+	/\ server(Ui, Sj, RC, RPKeyj, SKeyj, Hash, RI, RJ)
+	/\ regserver(Ui, Sj, RC, RPKeyi, RPKeyj, Hash, SRI, SRJ, RR)
+end role
+
+role environment()
+def=
+	local
+	Pubj: (agent.text.message) set,		
+	Pkeyj: message
+
+	const
+	idi, pwi, bi, hidi, rn1, rn2, skj : protocol_id,
+	a1, a2, b, r : agent,
+	kar1, kar2, kir, kbr : symmetric_key,
+	skeyj : text,
+	pkeyj : text,
+	h : hash_func
+	
+	init
+	Pkeyj := exp(pkeyj, skeyj)	
+	/\ Pubj := {b.pkeyj.exp(pkeyj, skeyj)}
+	
+	intruder_knowledge = {a1, a2, b, r, kir}
+	
+	composition
+	session(a1, b, r, kar1, kbr, Pubj, h, skeyj)
+	/\ session(a2, b, r, kar2, kbr, Pubj, h, skeyj)
+	/\ session(i, b, r, kir, kbr, Pubj, h, skeyj)
+end role
+
+goal
+	secrecy_of idi, pwi, bi, hidi, skj
+	authentication_on rn1, rn2
+end goal
+
+environment()
