@@ -2,21 +2,28 @@ role user(
 	Ui, Sj, RC : agent,
 	RPkeyi : symmetric_key, % used for registration phase(secure channel)
 	% Discrete Chaotic Map (SIDj, xj, Tsj(xj)(mod p))
-	Pubj : (agent.text.message) set,
 	Hash : hash_func, % cyptographic hash function
+	BH : hash_func, % biohash function
 	Snd, Rcv : channel(dy))
 played_by Ui def=
 
 	local
-	State : nat,	
-	IDi, PWi, Bi, Bhi, Ri, Ci, Vi, HIDi, UIDi, RNi, RN1: text,
-	Xj, Tri, Trisj, EHIDi, TRN1, RN2: text,
-	Tsj: message,	
+	State : nat,
+	Pubj : (agent.text.message) set,	
+	Ci, EHIDi : message,
+	Vi : hash(text.text.hash(text).text),
+	HIDi : hash(text.hash(text)),
+	UIDi : hash(hash(text.hash(text)).text),
+	Tsj, Tri : message,
+	IDi, PWi, Bi, Ri, RNi, RN1: text,
+	Xj, Trisj, TRN1, RN2: text,
 	RN3: text.text, 	
-	BH : hash_func
 	
+	Bhi : hash(text)
+
 	init
 	State := 0
+	/\ Pubj := {}
 
 	transition
 	% Registration phase
@@ -42,7 +49,10 @@ played_by Ui def=
 	/\ EHIDi' := {HIDi}_exp(Tsj',RNi') 
 	% symmetric encryption instead of chebyshev polynomial
 	/\ TRN1' := {RN1'}_UIDi %T_{RN1'}(UIDi)
-	/\ Snd(Sj.Tri'.EHIDi'.TRN1')
+	%/\ Snd(Sj.Tri'.EHIDi'.TRN1')
+	/\ Snd(Sj.Tri')
+	/\ Snd(Sj.EHIDi')
+	/\ Snd(Sj.TRN1')
 	% authentication property
 	/\ witness(Ui, Sj, rn1, RN1')
 	/\ RN3' := HIDi.RN1
@@ -58,35 +68,44 @@ role server(
 	Ui, Sj, RC: agent,
 	RPKeyj : symmetric_key, % used for registration phase(secure channel)
 	Hash : hash_func, % cyptographic hash function
+	BH : hash_func, % biohash function
 	Snd, Rcv : channel(dy))
 played_by Sj def=
 
 	local
 	State : nat,
-	HIDi, UIDi, XIDi : text,
-	SKeyj, Tri, RN1, RN2, Ex1 : text,	
+	RN1, RN2 : text,	
 	RN3 : text.text,	
-	KeyRing: (text.text) set
+	KeyRing: (hash(hash(text.hash(text)).text).hash(hash(text.hash(text)).text)) set,
+	PKeyj : text, %public key(x_j) of discrete chebyshev
+	TPKeyj : message, %public key (T_{x_j}(x_j)) of discrete chebyshev
+	SKeyj : text, %secret key
+	HIDi : hash(text.hash(text)),
+	UIDi, XIDi: hash(hash(text.hash(text)).text),
+	Tri, Ex1 : message
 
 	init
 	State := 0
+	/\ KeyRing := {}
 
 	transition
 	% Server Registration phase
 	0. State = 0 /\ Rcv(start)
 	=|> State' := 1 /\ Snd({Sj}_RPKeyj)
 	
-	1. State = 1 /\ Rcv(SKeyj'_RPKeyj)
+	1. State = 1 /\ Rcv({PKeyj'.TPKeyj'.SKeyj'}_RPKeyj)
 	=|> State' := 2
-	
+	/\ Snd(Sj.PKeyj'.TPKeyj')	% release public key
+
 	% Registration phase
 	2. State = 2 /\ Rcv({HIDi'.UIDi'}_RPKeyj) /\ not(in(XIDi'.UIDi', KeyRing))
 	=|> State' := 3
-	/\ XIDi' := Hash(HIDi.SKeyj)
+	/\ XIDi' := Hash(HIDi'.SKeyj)
 	/\ KeyRing' := cons(XIDi'.UIDi', KeyRing)
-	
+
 	% Login phase
-	3. State = 3 /\ Rcv(Sj.Tri'.{HIDi'}_Ex1'.{RN1'}_UIDi') /\ Ex1' = exp(Tri',SKeyj) /\ in(Hash(HIDi'.SKeyj).UIDi', KeyRing)
+	%3. State = 3 /\ Rcv(Sj.Tri'.{HIDi'}_Ex1'.{RN1'}_UIDi')  /\ Ex1' = exp(Tri',SKeyj) /\ in(Hash(HIDi'.SKeyj).UIDi', KeyRing)
+	3. State = 3 /\ Rcv(Sj.Tri')  /\ Ex1' = exp(Tri',SKeyj) /\ Rcv(Sj.{HIDi'}_Ex1') /\ in(Hash(HIDi'.SKeyj).UIDi', KeyRing)/\ Rcv(Sj.{RN1'}_UIDi')
 	=|> State' := 5
 	/\ RN2' := new()
 	/\ RN3' := HIDi.RN1
@@ -101,16 +120,21 @@ end role
 % Registration Server
 role regserver(
 	Ui, Sj, RC : agent,
-	RPkeyi : symmetric_key, % secure channel w/ Ui
-	RPkeyj : symmetric_key, % secure channel w/ Sj
+	RPKeyi : symmetric_key, % secure channel w/ Ui
+	RPKeyj : symmetric_key, % secure channel w/ Sj
 	Hash : hash_func,
+	BH : hash_func, % biohash function
 	Sndi, Sndj, Rcv : channel(dy))
 played_by RC def=
 
 	local
 	State : nat,
-	HIDi, Uri, UIDi, Ci, Vi : text
-	Xj, SKj : text	
+	Uri  : text,
+	Ci : message,
+	Vi : hash(text.text.hash(text).text),
+	Xj, SKj : text,
+	HIDi : hash(text.hash(text)),
+	UIDi : hash(hash(text.hash(text)).text),
 	TXj : message
 
 	init
@@ -118,64 +142,59 @@ played_by RC def=
 	
 	transition
 	% Server Registration
-	0. State = 0 /\ Rcv(Sj_RPKeyj)
+	0. State = 0 /\ Rcv({Sj}_RPKeyj)
 	=|> State' := 1
 	/\ Xj' := new()
 	/\ SKj' := new()
-	/\ Txj' := exp(Xj', Skj')
-	/\ Sndi(Sj.Xj'.TXj')
-	/\ Sndj(SKj'_RPKeyj)
+	/\ TXj' := exp(Xj', SKj')
+	%/\ Sndi(Sj.Xj'.TXj')
+	/\ Sndj({Xj'.TXj'.SKj'}_RPKeyj)
 	/\ secret(SKj', skj, {Sj, RC}) 
 	
 	% User Registration	
-	1. State = 1 /\ Rcv({HIDi'.Ci'.Vi'}_RPkeyi)
+	1. State = 1 /\ Rcv({HIDi'.Ci'.Vi'}_RPKeyi)
 	=|> State' := 1
 	/\ Uri' := new()
 	/\ UIDi' := Hash(HIDi'.Uri')
-	/\ Sndi({UIDi'.Ci'.Vi'}_RPkeyi)
-	/\ Sndj({HIDi'.UIDi'}_RPkeyj)
+	/\ Sndi({UIDi'.Ci'.Vi'}_RPKeyi)
+	/\ Sndj({HIDi'.UIDi'}_RPKeyj)
 end role
 
 role session(
 	Ui, Sj, RC : agent,
 	RPKeyi : symmetric_key,
 	RPKeyj : symmetric_key, % used for registration phase(secure channel)
-	Pubj : (agent.text.message) set,
+	%Pubj : (agent.message.message) set,
+	%PKeyj : text,
+	%SKeyj : message, % secret key of server
 	Hash : hash_func,
-	SKeyj : text) % secret key of server
+	BH : hash_func)
 def=
 	local SI, SJ, RI, RJ, RR, SRI, SRJ : channel(dy)
 
 	composition
-	user(Ui, Sj, RC, RPKeyi, Pubj, Hash, SI, SJ)
-	/\ server(Ui, Sj, RC, RPKeyj, SKeyj, Hash, RI, RJ)
-	/\ regserver(Ui, Sj, RC, RPKeyi, RPKeyj, Hash, SRI, SRJ, RR)
+	user(Ui, Sj, RC, RPKeyi, Hash, BH, SI, SJ)
+	/\ server(Ui, Sj, RC, RPKeyj, Hash, BH, RI, RJ)
+	/\ regserver(Ui, Sj, RC, RPKeyi, RPKeyj, Hash, BH, SRI, SRJ, RR)
 end role
 
 role environment()
 def=
-	local
-	Pubj: (agent.text.message) set,		
-	Pkeyj: message
-
 	const
 	idi, pwi, bi, hidi, rn1, rn2, skj : protocol_id,
 	a1, a2, b, r : agent,
 	kar1, kar2, kir, kbr : symmetric_key,
 	skeyj : text,
 	pkeyj : text,
-	h : hash_func
-	
-	init
-	Pkeyj := exp(pkeyj, skeyj)	
-	/\ Pubj := {b.pkeyj.exp(pkeyj, skeyj)}
-	
-	intruder_knowledge = {a1, a2, b, r, kir}
+	h : hash_func,
+	bh : hash_func
+
+	intruder_knowledge = {a1, a2, b, r, kir, h, bh}
 	
 	composition
-	session(a1, b, r, kar1, kbr, Pubj, h, skeyj)
-	/\ session(a2, b, r, kar2, kbr, Pubj, h, skeyj)
-	/\ session(i, b, r, kir, kbr, Pubj, h, skeyj)
+	session(a1, b, r, kar1, kbr, h, bh)
+	%/\ session(a2, b, r, kar2, kbr, h, bh)
+	%/\ session(i, b, r, kir, kbr, h, bh)
 end role
 
 goal
